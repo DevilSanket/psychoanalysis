@@ -279,14 +279,33 @@ export default function TaskAnalytics({ onSelectChild }: TaskAnalyticsProps) {
                   return (
                     <tr key={t.id || idx} style={{ borderBottom: "1px solid #f1f5f9", background: isComp ? "#f8fafc" : "transparent" }}>
                       <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                        <input
-                          type="checkbox"
-                          style={{ width: "18px", height: "18px", cursor: "pointer", accentColor: "#16a34a" }}
-                          checked={isComp}
-                          onChange={() => handleToggleTask(t)}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleTask(t)}
                           disabled={togglingTaskId === t.id}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            padding: "4px",
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: "4px",
+                          }}
                           title={isComp ? "Click to mark as pending" : "Click to mark as completed"}
-                        />
+                        >
+                          <span
+                            className="msym"
+                            style={{
+                              fontSize: "22px",
+                              color: isComp ? "#16a34a" : "#94a3b8",
+                              userSelect: "none",
+                            }}
+                          >
+                            {isComp ? "check_box" : "check_box_outline_blank"}
+                          </span>
+                        </button>
                       </td>
                       <td
                         style={{

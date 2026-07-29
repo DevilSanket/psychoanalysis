@@ -1524,12 +1524,30 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
                                           const cleanText = item.replace(/^\[(COMPLETED|DONE|x)\]\s*/i, "");
                                           return (
                                             <li key={iIdx} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                                              <input
-                                                type="checkbox"
-                                                checked={isComp}
-                                                onChange={() => handleToggleTaskInHistory(item)}
-                                                style={{ cursor: "pointer", accentColor: "#16a34a" }}
-                                              />
+                                              <button
+                                                type="button"
+                                                onClick={() => handleToggleTaskInHistory(item)}
+                                                style={{
+                                                  background: "none",
+                                                  border: "none",
+                                                  padding: 0,
+                                                  cursor: "pointer",
+                                                  display: "inline-flex",
+                                                  alignItems: "center",
+                                                }}
+                                                title={isComp ? "Click to mark as pending" : "Click to mark as completed"}
+                                              >
+                                                <span
+                                                  className="msym"
+                                                  style={{
+                                                    fontSize: "20px",
+                                                    color: isComp ? "#16a34a" : "#94a3b8",
+                                                    userSelect: "none",
+                                                  }}
+                                                >
+                                                  {isComp ? "check_box" : "check_box_outline_blank"}
+                                                </span>
+                                              </button>
                                               <span style={{ textDecoration: isComp ? "line-through" : "none", color: isComp ? "var(--text-secondary)" : "inherit" }}>
                                                 {cleanText}
                                               </span>
@@ -1705,12 +1723,30 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
                                             const cleanText = task.replace(/^\[(COMPLETED|DONE|x)\]\s*/i, "");
                                             return (
                                               <li key={taskIdx} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                                                <input
-                                                  type="checkbox"
-                                                  checked={isComp}
-                                                  onChange={() => handleToggleTaskInHistory(task)}
-                                                  style={{ cursor: "pointer", accentColor: "#16a34a" }}
-                                                />
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleToggleTaskInHistory(task)}
+                                                  style={{
+                                                    background: "none",
+                                                    border: "none",
+                                                    padding: 0,
+                                                    cursor: "pointer",
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                  }}
+                                                  title={isComp ? "Click to mark as pending" : "Click to mark as completed"}
+                                                >
+                                                  <span
+                                                    className="msym"
+                                                    style={{
+                                                      fontSize: "20px",
+                                                      color: isComp ? "#16a34a" : "#94a3b8",
+                                                      userSelect: "none",
+                                                    }}
+                                                  >
+                                                    {isComp ? "check_box" : "check_box_outline_blank"}
+                                                  </span>
+                                                </button>
                                                 <span style={{ textDecoration: isComp ? "line-through" : "none", color: isComp ? "var(--text-secondary)" : "inherit" }}>
                                                   {cleanText}
                                                 </span>
