@@ -25,6 +25,11 @@ import {
 import ProfileCard from "./ProfileCard";
 import CollapsibleSection from "./CollapsibleSection";
 import BehavioralTimeline from "./BehavioralTimeline";
+import ChildRiskDashboard from "./ChildRiskDashboard";
+import FallingThroughCracks from "./FallingThroughCracks";
+import BalgruhaHeatMap from "./BalgruhaHeatMap";
+import TaskAnalytics from "./TaskAnalytics";
+import SuccessStories from "./SuccessStories";
 import { useToast } from "../toast";
 
 function fmtDate(d: string | undefined): string {
@@ -94,6 +99,9 @@ export interface RosterInsightsProps {
 }
 
 export default function RosterInsights({ initialCenter, initialChildName }: RosterInsightsProps = {}) {
+  const [insightsTab, setInsightsTab] = useState<
+    "roster" | "risk-dashboard" | "falling-cracks" | "heatmap" | "task-analytics" | "success-stories"
+  >("roster");
   const [centers, setCenters] = useState<Center[]>([]);
   const [selectedCenter, setSelectedCenter] = useState("");
   const [kids, setKids] = useState<ChildDoc[]>([]);
@@ -405,6 +413,7 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
   // Handle initialCenter navigation prop (e.g. from Admin Panel click)
   useEffect(() => {
     if (!initialCenter) return;
+    setInsightsTab("roster");
     if (centers.length > 0) {
       const match = centers.find(
         (c) => c.name.toLowerCase().trim() === initialCenter.toLowerCase().trim()
@@ -691,13 +700,92 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
         <span className="msym">insights</span> Evaluation / InnerMap
       </h2>
       <p className="muted" style={{ marginBottom: 20 }}>
-        Browse historical observations, trace child progress over time, and
-        view de-duplicated action items.
+        Browse historical observations, trace child progress over time, track risk levels, and view analytics.
       </p>
 
+      {/* Evaluation Sub-Tabs */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
+        <button
+          className={`tab-btn ${insightsTab === "roster" ? "active" : ""}`}
+          onClick={() => setInsightsTab("roster")}
+        >
+          <span className="msym">folder_shared</span>
+          Child Directory & History
+        </button>
+        <button
+          className={`tab-btn ${insightsTab === "risk-dashboard" ? "active" : ""}`}
+          onClick={() => setInsightsTab("risk-dashboard")}
+        >
+          <span className="msym">dashboard</span>
+          Risk Dashboard
+        </button>
+        <button
+          className={`tab-btn ${insightsTab === "falling-cracks" ? "active" : ""}`}
+          onClick={() => setInsightsTab("falling-cracks")}
+        >
+          <span className="msym">warning</span>
+          Falling Through Cracks
+        </button>
+        <button
+          className={`tab-btn ${insightsTab === "heatmap" ? "active" : ""}`}
+          onClick={() => setInsightsTab("heatmap")}
+        >
+          <span className="msym">map</span>
+          Balgruha Heat Map
+        </button>
+        <button
+          className={`tab-btn ${insightsTab === "task-analytics" ? "active" : ""}`}
+          onClick={() => setInsightsTab("task-analytics")}
+        >
+          <span className="msym">analytics</span>
+          Task Analytics
+        </button>
+        <button
+          className={`tab-btn ${insightsTab === "success-stories" ? "active" : ""}`}
+          onClick={() => setInsightsTab("success-stories")}
+        >
+          <span className="msym">verified</span>
+          Success Stories
+        </button>
+      </div>
 
-      {/* Center selector */}
-      <div className="form-group" style={{ maxWidth: 400, marginBottom: 24 }}>
+      {insightsTab === "risk-dashboard" && (
+        <ChildRiskDashboard
+          onSelectChild={(childName, balgruhaName) => {
+            setSelectedCenter(balgruhaName);
+            setSearch(childName);
+            setInsightsTab("roster");
+          }}
+        />
+      )}
+
+      {insightsTab === "falling-cracks" && (
+        <FallingThroughCracks
+          onSelectChild={(childName, balgruhaName) => {
+            setSelectedCenter(balgruhaName);
+            setSearch(childName);
+            setInsightsTab("roster");
+          }}
+        />
+      )}
+
+      {insightsTab === "heatmap" && (
+        <BalgruhaHeatMap
+          onSelectCenter={(balgruhaName) => {
+            setSelectedCenter(balgruhaName);
+            setInsightsTab("roster");
+          }}
+        />
+      )}
+
+      {insightsTab === "task-analytics" && <TaskAnalytics />}
+
+      {insightsTab === "success-stories" && <SuccessStories />}
+
+      {insightsTab === "roster" && (
+        <>
+          {/* Center selector */}
+          <div className="form-group" style={{ maxWidth: 400, marginBottom: 24 }}>
         <label htmlFor="roster-center">Select Center / Balgruha</label>
         <select
           id="roster-center"
@@ -1841,5 +1929,7 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
     </>
   )}
 </>
+)}
+    </>
   );
 }
