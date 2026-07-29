@@ -706,7 +706,14 @@ def get_balgruha_risk_heatmap() -> dict:
             "high_risk_pct": high_risk_pct,
         })
 
-    highest_risk = result[0]["balgruha_name"] if result else "None"
+    highest_risk = "None"
+    max_high_risk = 0
+    for item in result:
+        hr = item.get("high_risk", 0)
+        if hr > max_high_risk:
+            max_high_risk = hr
+            highest_risk = item["balgruha_name"]
+
     total_children = sum(x["total_children"] for x in result)
 
     return {
