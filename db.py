@@ -739,11 +739,56 @@ def categorize_task(task_text: str) -> str:
     return "General / Follow-up"
 
 
+def toggle_child_task_completion(child_id: str, task_text: str, completed: bool) -> bool:
+    """Toggles task completion state between '[COMPLETED] task' and 'task' in MongoDB."""
+    import re
+    col = get_children_collection()
+    try:
+        cid = ObjectId(child_id)
+    except Exception:
+        return False
+
+    clean_task = re.sub(r"^\[(COMPLETED|DONE|x)\]\s*", "", task_text, flags=re.IGNORECASE).strip()
+    target_completed_str = f"[COMPLETED] {clean_task}"
+
+    doc = col.find_one({"_id": cid}, {"observations": 1})
+    if not doc or "observations" not in doc:
+        return False
+
+    obs_list = doc.get("observations") or []
+    modified = False
+
+    for obs in obs_list:
+        if isinstance(obs, dict) and "actionItems" in obs:
+            items = obs.get("actionItems") or []
+            if not isinstance(items, list):
+                continue
+            new_items = []
+            for item in items:
+                if isinstance(item, str):
+                    item_clean = re.sub(r"^\[(COMPLETED|DONE|x)\]\s*", "", item, flags=re.IGNORECASE).strip()
+                    if item_clean == clean_task:
+                        new_items.append(target_completed_str if completed else clean_task)
+                        modified = True
+                    else:
+                        new_items.append(item)
+                else:
+                    new_items.append(item)
+            obs["actionItems"] = new_items
+
+    if modified:
+        res = col.update_one({"_id": cid}, {"$set": {"observations": obs_list}})
+        return res.modified_count > 0
+
+    return False
+
+
 def get_pending_task_analytics() -> dict:
     """
     Key Metrics: Current Pending, Completed, Overdue (>15 days), Average Completion Days,
     Tasks Pending > 15 days, Most Delayed Balgruh, Category Filters.
     """
+    import re
     col = get_children_collection()
     children = list(col.find({}, {
         "_id": 1,
@@ -767,6 +812,7 @@ def get_pending_task_analytics() -> dict:
     balgruha_overdue_map = {}
 
     total_pending = 0
+    completed_count = 0
     overdue_count = 0
     total_days_accum = 0
 
@@ -794,32 +840,41 @@ def get_pending_task_analytics() -> dict:
                     pass
 
             days_pending = (now - obs_dt).days if obs_dt else 5
-            is_overdue = days_pending > 15
 
             for item in action_items:
                 if not isinstance(item, str) or not item.strip():
                     continue
 
-                cat = categorize_task(item)
-                category_counts[cat] = category_counts.get(cat, 0) + 1
-                total_pending += 1
-                total_days_accum += days_pending
+                raw_item = item.strip()
+                is_completed = bool(re.match(r"^\[(COMPLETED|DONE|x)\]", raw_item, re.IGNORECASE))
+                clean_task = re.sub(r"^\[(COMPLETED|DONE|x)\]\s*", "", raw_item, flags=re.IGNORECASE).strip()
 
-                if is_overdue:
-                    overdue_count += 1
-                    balgruha_overdue_map[bname] = balgruha_overdue_map.get(bname, 0) + 1
+                cat = categorize_task(clean_task)
+                category_counts[cat] = category_counts.get(cat, 0) + 1
+
+                if is_completed:
+                    completed_count += 1
+                else:
+                    total_pending += 1
+                    total_days_accum += days_pending
+                    is_overdue = days_pending > 15
+                    if is_overdue:
+                        overdue_count += 1
+                        balgruha_overdue_map[bname] = balgruha_overdue_map.get(bname, 0) + 1
 
                 detailed_tasks.append({
                     "id": f"{cid}_{len(detailed_tasks)}",
                     "child_id": cid,
                     "child_name": cname,
                     "balgruha_name": bname,
-                    "task": item.strip(),
+                    "task": clean_task,
+                    "raw_task": raw_item,
                     "category": cat,
                     "date": obs_dt.strftime("%d %b %Y") if obs_dt else "Recent",
                     "days_pending": days_pending,
-                    "is_overdue": is_overdue,
-                    "status": "pending",
+                    "is_overdue": not is_completed and (days_pending > 15),
+                    "is_completed": is_completed,
+                    "status": "completed" if is_completed else "pending",
                 })
 
     most_delayed_balgruh = "None"
@@ -830,7 +885,6 @@ def get_pending_task_analytics() -> dict:
             most_delayed_balgruh = bname
 
     avg_completion_days = round(total_days_accum / total_pending, 1) if total_pending > 0 else 0.0
-    completed_count = max(0, int(total_pending * 0.35))
 
     return {
         "metrics": {

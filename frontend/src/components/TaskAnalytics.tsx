@@ -1,18 +1,24 @@
 import { useState, useEffect } from "react";
 import {
   fetchTaskAnalytics,
+  toggleChildTask,
   type TaskAnalyticsResponse,
+  type DetailedTask,
 } from "../api";
+import { useToast } from "../toast";
 
 interface TaskAnalyticsProps {
   onSelectChild?: (childName: string, balgruhaName: string) => void;
 }
 
 export default function TaskAnalytics({ onSelectChild }: TaskAnalyticsProps) {
+  const toast = useToast();
   const [data, setData] = useState<TaskAnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [statusTab, setStatusTab] = useState<"all" | "pending" | "completed">("all");
+  const [togglingTaskId, setTogglingTaskId] = useState<string | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -30,6 +36,53 @@ export default function TaskAnalytics({ onSelectChild }: TaskAnalyticsProps) {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleToggleTask = async (task: DetailedTask) => {
+    setTogglingTaskId(task.id);
+    const nextCompleted = !Boolean(task.is_completed || task.status === "completed");
+    try {
+      await toggleChildTask(task.child_id, task.task, nextCompleted);
+      toast.success(
+        nextCompleted
+          ? `Marked task as completed!`
+          : `Re-opened task for ${task.child_name}`
+      );
+      // Optimistically update local task state
+      setData((prev) => {
+        if (!prev) return prev;
+        const updatedTasks = prev.tasks.map((t) => {
+          if (t.id === task.id || (t.child_id === task.child_id && t.task === task.task)) {
+            return {
+              ...t,
+              is_completed: nextCompleted,
+              status: nextCompleted ? "completed" : "pending",
+              is_overdue: nextCompleted ? false : t.is_overdue,
+            };
+          }
+          return t;
+        });
+
+        const pendingCount = updatedTasks.filter((t) => !t.is_completed && t.status !== "completed").length;
+        const completedCount = updatedTasks.filter((t) => t.is_completed || t.status === "completed").length;
+        const overdueCount = updatedTasks.filter((t) => (!t.is_completed && t.status !== "completed") && t.is_overdue).length;
+
+        return {
+          ...prev,
+          metrics: {
+            ...prev.metrics,
+            current_pending: pendingCount,
+            completed: completedCount,
+            overdue: overdueCount,
+          },
+          tasks: updatedTasks,
+        };
+      });
+    } catch (err: any) {
+      toast.error("Failed to update task: " + (err?.message || String(err)));
+    } finally {
+      setTogglingTaskId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -56,10 +109,13 @@ export default function TaskAnalytics({ onSelectChild }: TaskAnalyticsProps) {
   }
 
   const { metrics, categories, tasks } = data;
-
   const categoryList = ["All", "Aadhar", "Medical", "Counselling", "School", "Art Therapy"];
 
   const filteredTasks = tasks.filter((t) => {
+    const isComp = Boolean(t.is_completed || t.status === "completed");
+    if (statusTab === "pending" && isComp) return false;
+    if (statusTab === "completed" && !isComp) return false;
+
     if (selectedCategory === "All") return true;
     return t.category.toLowerCase() === selectedCategory.toLowerCase();
   });
@@ -86,7 +142,7 @@ export default function TaskAnalytics({ onSelectChild }: TaskAnalyticsProps) {
             📊 Pending Task Analytics
           </h2>
           <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--md-sys-color-on-surface-variant, #475569)" }}>
-            Tracking action items, completion times, and overdue tasks across all Balgruhas
+            Tracking action items, completion times, and overdue tasks across all Balgruhas. Click checkboxes to mark tasks completed!
           </p>
         </div>
 
@@ -95,7 +151,7 @@ export default function TaskAnalytics({ onSelectChild }: TaskAnalyticsProps) {
         </div>
       </div>
 
-      {/* 6 Key Metrics Cards */}
+      {/* 5 Key Metrics Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "14px" }}>
         <div style={{ padding: "16px", borderRadius: "14px", background: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
           <div style={{ fontSize: "0.78rem", color: "var(--md-sys-color-on-surface-variant, #475569)", fontWeight: 600 }}>Current Pending</div>
@@ -120,6 +176,33 @@ export default function TaskAnalytics({ onSelectChild }: TaskAnalyticsProps) {
         <div style={{ padding: "16px", borderRadius: "14px", background: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
           <div style={{ fontSize: "0.78rem", color: "var(--md-sys-color-on-surface-variant, #475569)", fontWeight: 600 }}>Pending &gt; 15 Days</div>
           <div style={{ fontSize: "1.8rem", fontWeight: 800, color: "#dc2626", marginTop: "4px" }}>{metrics.tasks_pending_over_15_days}</div>
+        </div>
+      </div>
+
+      {/* Status Filter Tabs (All / Pending / Completed) */}
+      <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "4px", background: "#f1f5f9", padding: "4px", borderRadius: "12px" }}>
+          <button
+            className={`btn-sm ${statusTab === "all" ? "btn-primary" : ""}`}
+            style={{ borderRadius: "8px", border: "none", padding: "6px 14px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem", background: statusTab === "all" ? "var(--md-sys-color-primary, #0369a1)" : "transparent", color: statusTab === "all" ? "#fff" : "#475569" }}
+            onClick={() => setStatusTab("all")}
+          >
+            All Tasks ({tasks.length})
+          </button>
+          <button
+            className={`btn-sm ${statusTab === "pending" ? "btn-primary" : ""}`}
+            style={{ borderRadius: "8px", border: "none", padding: "6px 14px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem", background: statusTab === "pending" ? "#d97706" : "transparent", color: statusTab === "pending" ? "#fff" : "#475569" }}
+            onClick={() => setStatusTab("pending")}
+          >
+            ⏳ Pending ({metrics.current_pending})
+          </button>
+          <button
+            className={`btn-sm ${statusTab === "completed" ? "btn-primary" : ""}`}
+            style={{ borderRadius: "8px", border: "none", padding: "6px 14px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem", background: statusTab === "completed" ? "#16a34a" : "transparent", color: statusTab === "completed" ? "#fff" : "#475569" }}
+            onClick={() => setStatusTab("completed")}
+          >
+            ✅ Completed ({metrics.completed})
+          </button>
         </div>
       </div>
 
@@ -174,13 +257,14 @@ export default function TaskAnalytics({ onSelectChild }: TaskAnalyticsProps) {
       >
         {filteredTasks.length === 0 ? (
           <p style={{ padding: "30px", textAlign: "center", color: "var(--md-sys-color-on-surface-variant, #475569)", fontStyle: "italic" }}>
-            No pending tasks found for category "{selectedCategory}".
+            No tasks found for category "{selectedCategory}" ({statusTab}).
           </p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem" }}>
               <thead>
                 <tr style={{ background: "#f8fafc", color: "var(--md-sys-color-on-surface-variant, #475569)", borderBottom: "1px solid #e2e8f0" }}>
+                  <th style={{ padding: "12px 16px", width: "60px", textAlign: "center" }}>Mark</th>
                   <th style={{ padding: "12px 16px" }}>Task / Action Item</th>
                   <th style={{ padding: "12px 16px" }}>Category</th>
                   <th style={{ padding: "12px 16px" }}>Child</th>
@@ -190,55 +274,75 @@ export default function TaskAnalytics({ onSelectChild }: TaskAnalyticsProps) {
                 </tr>
               </thead>
               <tbody>
-                {filteredTasks.map((t, idx) => (
-                  <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "12px 16px", fontWeight: 600, color: "var(--md-sys-color-on-surface, #020617)" }}>
-                      {t.task}
-                    </td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <span
+                {filteredTasks.map((t, idx) => {
+                  const isComp = Boolean(t.is_completed || t.status === "completed");
+                  return (
+                    <tr key={t.id || idx} style={{ borderBottom: "1px solid #f1f5f9", background: isComp ? "#f8fafc" : "transparent" }}>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <input
+                          type="checkbox"
+                          style={{ width: "18px", height: "18px", cursor: "pointer", accentColor: "#16a34a" }}
+                          checked={isComp}
+                          onChange={() => handleToggleTask(t)}
+                          disabled={togglingTaskId === t.id}
+                          title={isComp ? "Click to mark as pending" : "Click to mark as completed"}
+                        />
+                      </td>
+                      <td
                         style={{
-                          padding: "3px 8px",
-                          borderRadius: "8px",
-                          background: "#e0f2fe",
-                          color: "#0369a1",
-                          fontSize: "0.78rem",
+                          padding: "12px 16px",
                           fontWeight: 600,
+                          color: isComp ? "#94a3b8" : "var(--md-sys-color-on-surface, #020617)",
+                          textDecoration: isComp ? "line-through" : "none",
                         }}
                       >
-                        {t.category}
-                      </span>
-                    </td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <span
-                        style={{
-                          color: "var(--md-sys-color-primary, #0369a1)",
-                          fontWeight: 600,
-                          cursor: onSelectChild ? "pointer" : "default",
-                        }}
-                        onClick={() => onSelectChild && onSelectChild(t.child_name, t.balgruha_name)}
-                      >
-                        {t.child_name}
-                      </span>
-                    </td>
-                    <td style={{ padding: "12px 16px", color: "var(--md-sys-color-on-surface-variant, #475569)" }}>{t.balgruha_name}</td>
-                    <td style={{ padding: "12px 16px", color: "var(--md-sys-color-on-surface-variant, #475569)" }}>{t.date}</td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <span
-                        style={{
-                          padding: "3px 10px",
-                          borderRadius: "10px",
-                          fontSize: "0.78rem",
-                          fontWeight: 700,
-                          background: t.is_overdue ? "#fee2e2" : "#fef3c7",
-                          color: t.is_overdue ? "#dc2626" : "#b45309",
-                        }}
-                      >
-                        {t.is_overdue ? `🚨 Overdue (${t.days_pending}d)` : `⏳ ${t.days_pending} days pending`}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                        {t.task}
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <span
+                          style={{
+                            padding: "3px 8px",
+                            borderRadius: "8px",
+                            background: isComp ? "#f1f5f9" : "#e0f2fe",
+                            color: isComp ? "#64748b" : "#0369a1",
+                            fontSize: "0.78rem",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {t.category}
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <span
+                          style={{
+                            color: "var(--md-sys-color-primary, #0369a1)",
+                            fontWeight: 600,
+                            cursor: onSelectChild ? "pointer" : "default",
+                          }}
+                          onClick={() => onSelectChild && onSelectChild(t.child_name, t.balgruha_name)}
+                        >
+                          {t.child_name}
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px 16px", color: "var(--md-sys-color-on-surface-variant, #475569)" }}>{t.balgruha_name}</td>
+                      <td style={{ padding: "12px 16px", color: "var(--md-sys-color-on-surface-variant, #475569)" }}>{t.date}</td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <span
+                          style={{
+                            padding: "3px 10px",
+                            borderRadius: "10px",
+                            fontSize: "0.78rem",
+                            fontWeight: 700,
+                            background: isComp ? "#dcfce7" : t.is_overdue ? "#fee2e2" : "#fef3c7",
+                            color: isComp ? "#15803d" : t.is_overdue ? "#dc2626" : "#b45309",
+                          }}
+                        >
+                          {isComp ? "✅ Completed" : t.is_overdue ? `🚨 Overdue (${t.days_pending}d)` : `⏳ ${t.days_pending} days pending`}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

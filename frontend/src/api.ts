@@ -742,10 +742,12 @@ export interface DetailedTask {
   child_name: string;
   balgruha_name: string;
   task: string;
+  raw_task?: string;
   category: string;
   date: string;
   days_pending: number;
   is_overdue: boolean;
+  is_completed?: boolean;
   status: string;
 }
 
@@ -764,6 +766,17 @@ export interface TaskAnalyticsResponse {
 
 export async function fetchTaskAnalytics(): Promise<TaskAnalyticsResponse> {
   return request<TaskAnalyticsResponse>("/api/admin/task-analytics");
+}
+
+export async function toggleChildTask(
+  childId: string,
+  task: string,
+  completed: boolean
+): Promise<{ success: boolean; child_id: string; task: string; completed: boolean }> {
+  return post<{ success: boolean; child_id: string; task: string; completed: boolean }>(
+    `/api/children/${childId}/toggle-task`,
+    { task, completed }
+  );
 }
 
 /* -------------------------------------------------------------------------- */

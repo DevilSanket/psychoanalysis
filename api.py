@@ -46,6 +46,7 @@ from db import (
     get_children_falling_through_cracks,
     get_balgruha_risk_heatmap,
     get_pending_task_analytics,
+    toggle_child_task_completion,
     get_success_stories,
 )
 from pipeline import (
@@ -190,6 +191,11 @@ class TranslateSummaryRequest(BaseModel):
 class TranslateTasksRequest(BaseModel):
     lang: str = "hi"
     refresh: bool = False
+
+
+class ToggleTaskRequest(BaseModel):
+    task: str
+    completed: bool = True
 
 
 
@@ -2122,6 +2128,20 @@ def admin_balgruha_heatmap() -> dict:
 def admin_task_analytics() -> dict:
     """Returns pending task metrics, delayed balgruha stats, and category breakdowns."""
     return jsonable(get_pending_task_analytics())
+
+
+@app.post("/api/children/{child_id}/toggle-task")
+def api_toggle_child_task(child_id: str, payload: ToggleTaskRequest) -> dict:
+    """Toggles completion status for a specific task of a child."""
+    success = toggle_child_task_completion(child_id, payload.task, payload.completed)
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to update task status in database")
+    return {
+        "success": True,
+        "child_id": child_id,
+        "task": payload.task,
+        "completed": payload.completed,
+    }
 
 
 # ---------------------------------------------------------------------------

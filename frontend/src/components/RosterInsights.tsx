@@ -13,6 +13,7 @@ import {
   translateSummary,
   translatePendingTasks,
   fetchDedupedTasks,
+  toggleChildTask,
   inferGenders,
   type Center,
   type ChildDoc,
@@ -215,6 +216,21 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
       toast.push({ kind: "error", message: "Failed to update risk category: " + String(e) });
     } finally {
       setRiskSaving(false);
+    }
+  };
+
+  const handleToggleTaskInHistory = async (taskItem: string) => {
+    if (!selectedKid) return;
+    const clean = taskItem.replace(/^\[(COMPLETED|DONE|x)\]\s*/i, "").trim();
+    const isComp = /^\[(COMPLETED|DONE|x)\]/i.test(taskItem);
+    const nextComp = !isComp;
+    try {
+      await toggleChildTask(selectedKid, clean, nextComp);
+      toast.push({ kind: "success", message: nextComp ? "Marked task as completed!" : "Re-opened task." });
+      const freshObs = await fetchObservations(selectedKid);
+      setObsHistory(freshObs);
+    } catch (e) {
+      toast.push({ kind: "error", message: "Failed to update task: " + String(e) });
     }
   };
 
@@ -1502,10 +1518,24 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
                                       <div className="collapse-divider" style={{ margin: "4px 0 6px" }}>
                                         {fmtDate(o.date)} · {o.reportTitle || "Untitled"}
                                       </div>
-                                      <ul style={{ margin: 0, paddingLeft: 20 }}>
-                                        {o.actionItems!.map((item, iIdx) => (
-                                          <li key={iIdx}>{item}</li>
-                                        ))}
+                                      <ul style={{ margin: 0, paddingLeft: 0, listStyle: "none" }}>
+                                        {o.actionItems!.map((item, iIdx) => {
+                                          const isComp = /^\[(COMPLETED|DONE|x)\]/i.test(item);
+                                          const cleanText = item.replace(/^\[(COMPLETED|DONE|x)\]\s*/i, "");
+                                          return (
+                                            <li key={iIdx} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                              <input
+                                                type="checkbox"
+                                                checked={isComp}
+                                                onChange={() => handleToggleTaskInHistory(item)}
+                                                style={{ cursor: "pointer", accentColor: "#16a34a" }}
+                                              />
+                                              <span style={{ textDecoration: isComp ? "line-through" : "none", color: isComp ? "var(--text-secondary)" : "inherit" }}>
+                                                {cleanText}
+                                              </span>
+                                            </li>
+                                          );
+                                        })}
                                       </ul>
                                     </div>
                                   ));
@@ -1669,11 +1699,25 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
                                     <li>
                                       <strong>New Tasks:</strong>
                                       {obs.actionItems && obs.actionItems.length > 0 ? (
-                                        <ol style={{ paddingLeft: 20, marginTop: 4, marginBottom: 0 }}>
-                                          {obs.actionItems.map((task, taskIdx) => (
-                                            <li key={taskIdx}>{task}</li>
-                                          ))}
-                                        </ol>
+                                        <ul style={{ paddingLeft: 0, marginTop: 4, marginBottom: 0, listStyle: "none" }}>
+                                          {obs.actionItems.map((task, taskIdx) => {
+                                            const isComp = /^\[(COMPLETED|DONE|x)\]/i.test(task);
+                                            const cleanText = task.replace(/^\[(COMPLETED|DONE|x)\]\s*/i, "");
+                                            return (
+                                              <li key={taskIdx} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                                <input
+                                                  type="checkbox"
+                                                  checked={isComp}
+                                                  onChange={() => handleToggleTaskInHistory(task)}
+                                                  style={{ cursor: "pointer", accentColor: "#16a34a" }}
+                                                />
+                                                <span style={{ textDecoration: isComp ? "line-through" : "none", color: isComp ? "var(--text-secondary)" : "inherit" }}>
+                                                  {cleanText}
+                                                </span>
+                                              </li>
+                                            );
+                                          })}
+                                        </ul>
                                       ) : (
                                         <span className="muted"> (None)</span>
                                       )}
