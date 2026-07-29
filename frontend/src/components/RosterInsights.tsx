@@ -585,12 +585,28 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
     return "General Support / Unspecified";
   };
 
-  const distinctTraumas = useMemo(() => {
-    const categories = new Set<string>();
-    kids.forEach(k => {
-      categories.add(getChildTraumaCategory(k));
+  const formatTraumaLabel = (cat: string): { label: string; emoji: string } => {
+    const c = cat.toLowerCase();
+    if (c.includes("high") || c === "high_risk") return { label: "High Risk", emoji: "🔴" };
+    if (c.includes("unprocessed") || c.includes("trauma_unprocessed")) return { label: "Trauma Unprocessed", emoji: "🟧" };
+    if (c.includes("identity") || c.includes("identity_formation")) return { label: "Identity Formation", emoji: "🟨" };
+    if (c.includes("well") || c.includes("well_adjusted")) return { label: "Well Adjusted", emoji: "🟩" };
+    if (c.includes("incarceration") || c.includes("jail")) return { label: "Parental Incarceration", emoji: "🛡️" };
+    if (c.includes("abandon") || c.includes("neglect") || c.includes("orphan")) return { label: "Abandonment / Neglect", emoji: "🏚️" };
+    if (c.includes("anxiety") || c.includes("emotional")) return { label: "Emotional / Anxiety", emoji: "💙" };
+    if (c.includes("disruption") || c.includes("single parent")) return { label: "Family Disruption", emoji: "💔" };
+    return { label: cat, emoji: "🏷️" };
+  };
+
+  const distinctTraumasWithCounts = useMemo(() => {
+    const countsMap = new Map<string, number>();
+    kids.forEach((k) => {
+      const cat = getChildTraumaCategory(k);
+      countsMap.set(cat, (countsMap.get(cat) || 0) + 1);
     });
-    return Array.from(categories).sort();
+    return Array.from(countsMap.entries())
+      .map(([cat, count]) => ({ cat, count }))
+      .sort((a, b) => b.count - a.count || a.cat.localeCompare(b.cat));
   }, [kids]);
 
   const filteredKids = useMemo(() => {
@@ -931,12 +947,33 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
                     value={traumaFilter}
                     onChange={(e) => setTraumaFilter(e.target.value)}
                   >
-                    <option value="all">All Traumas</option>
-                    {distinctTraumas.map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
+                    <option value="all">All Traumas & Risk Categories ({kids.length})</option>
+                    {distinctTraumasWithCounts.map(({ cat, count }) => {
+                      const { label, emoji } = formatTraumaLabel(cat);
+                      return (
+                        <option key={cat} value={cat}>
+                          {emoji} {label} ({count})
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
+
+                {traumaFilter !== "all" && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8, padding: "4px 8px", fontSize: 11 }}>
+                    <span style={{ color: "#0369a1", fontWeight: 600 }}>
+                      Filter: {formatTraumaLabel(traumaFilter).emoji} {formatTraumaLabel(traumaFilter).label} ({filteredKids.length})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setTraumaFilter("all")}
+                      style={{ border: "none", background: "none", color: "#0284c7", cursor: "pointer", fontWeight: 700, padding: 0 }}
+                      title="Clear trauma filter"
+                    >
+                      ✕ Clear
+                    </button>
+                  </div>
+                )}
               </div>
 
               {filteredKids.length === 0 ? (
@@ -985,7 +1022,12 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
                         })()}
                       </div>
                       <div className="child-list-meta">
-                        <div className="child-list-name">{k.child_name}</div>
+                        <div className="child-list-name" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
+                          <span>{k.child_name}</span>
+                          <span title={formatTraumaLabel(getChildTraumaCategory(k)).label} style={{ fontSize: 11, flexShrink: 0 }}>
+                            {formatTraumaLabel(getChildTraumaCategory(k)).emoji}
+                          </span>
+                        </div>
                         <div className="muted child-list-sub" style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span>{(k.observations?.length ?? 0)} obs</span>
                           {k.gender === "male" && (
