@@ -166,19 +166,6 @@ function App() {
                 </span>
                 MongoDB
               </span>
-              <span
-                className={`badge ${health.langsmith ? "badge-success" : "badge-warn"}`}
-                title={
-                  health.langsmith
-                    ? "LangSmith tracing enabled"
-                    : "LangSmith tracing disabled"
-                }
-              >
-                <span className="msym badge-msym" aria-hidden="true">
-                  {health.langsmith ? "monitoring" : "visibility_off"}
-                </span>
-                LangSmith
-              </span>
             </>
           ) : healthFailed ? (
             <button className="badge badge-error badge-btn" onClick={checkHealth}>

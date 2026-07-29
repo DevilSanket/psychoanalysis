@@ -14,7 +14,6 @@
 
 export interface HealthStatus {
   mongo: boolean;
-  langsmith?: boolean;
 }
 
 export interface Center {
