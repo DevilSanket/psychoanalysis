@@ -778,6 +778,23 @@ export async function toggleChildTask(
   );
 }
 
+export async function addQuickObservation(
+  childId: string,
+  payload: {
+    date?: string;
+    report_title?: string;
+    observations: string;
+    action_items?: string[];
+    risk_category?: string;
+  }
+): Promise<{ success: boolean; message: string; child_id: string }> {
+  return post<{ success: boolean; message: string; child_id: string }>(
+    `/api/children/${childId}/add-observation`,
+    payload
+  );
+}
+
+
 /* -------------------------------------------------------------------------- */
 /*  Feature 6: Success Stories / Recovery Page API                            */
 /* -------------------------------------------------------------------------- */

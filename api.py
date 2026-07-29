@@ -198,6 +198,15 @@ class ToggleTaskRequest(BaseModel):
     completed: bool = True
 
 
+class QuickObservationRequest(BaseModel):
+    date: Optional[str] = None
+    report_title: Optional[str] = None
+    observations: str
+    action_items: Optional[list[str]] = []
+    risk_category: Optional[str] = None
+    coaches_involved: Optional[list[str]] = ["Psychologist / Social Worker"]
+
+
 
 # ---------------------------------------------------------------------------
 # Health & centers
@@ -2142,6 +2151,45 @@ def api_toggle_child_task(child_id: str, payload: ToggleTaskRequest) -> dict:
         "task": payload.task,
         "completed": payload.completed,
     }
+
+
+@app.post("/api/children/{child_id}/add-observation")
+def add_child_quick_observation(child_id: str, req: QuickObservationRequest) -> dict:
+    """Appends a new observation report directly to a child's record in MongoDB."""
+    collection = get_children_collection()
+    try:
+        oid = ObjectId(child_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid child_id")
+
+    child = collection.find_one({"_id": oid})
+    if not child:
+        raise HTTPException(status_code=404, detail="Child not found")
+
+    obs_date = req.date or datetime.utcnow().strftime("%Y-%m-%d")
+    report_title = req.report_title or f"Follow-up Assessment ({obs_date})"
+
+    new_obs = {
+        "date": obs_date,
+        "reportTitle": report_title,
+        "observations": req.observations.strip(),
+        "actionItems": [item.strip() for item in req.action_items if item.strip()] if req.action_items else [],
+        "coachesInvolved": req.coaches_involved or ["Psychologist / Social Worker"],
+    }
+
+    update_doc = {"$push": {"observations": new_obs}}
+    if req.risk_category:
+        update_doc["$set"] = {"risk_category": req.risk_category}
+
+    collection.update_one({"_id": oid}, update_doc)
+
+    return {
+        "success": True,
+        "message": f"Successfully added observation for {child.get('child_name')}",
+        "child_id": child_id,
+        "observation": new_obs,
+    }
+
 
 
 # ---------------------------------------------------------------------------
