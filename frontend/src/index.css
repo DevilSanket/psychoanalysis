@@ -1,0 +1,403 @@
+/* ============================================================
+   ISF Psycho-Analysis Portal — Design System tokens
+   ------------------------------------------------------------
+   Source of truth: design-system/isf-psycho-analysis-portal/MASTER.md
+   Direction (ui-ux-pro-max skill, dials: variance=3, motion=4, density=8):
+     - Light mode ONLY. No dark theme variants. color-scheme: light.
+     - Professional, clinical, data-dense operational dashboard.
+     - Restrained navy + slate surfaces, blue CTA, green/red data accents.
+     - No aurora gradients, no AI purple/pink, no glass blooms.
+     - Honours prefers-reduced-motion. Transitions in 150–300ms band.
+   ============================================================ */
+:root {
+  /* ---- Colour tokens (from skill MASTER.md) ----
+     Mixed with your existing MD3 naming so @material/web + Material Symbols keep working. */
+  --md-sys-color-primary: #0369A1;          /* CTA / accent */
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #E0F2FE;
+  --md-sys-color-on-primary-container: #0C4A6E;
+  --md-sys-color-secondary: #334155;       /* Slate 700 — secondary text & icons */
+  --md-sys-color-secondary-container: #F1F5F9;
+  --md-sys-color-tertiary: #0F172A;        /* Slate 900 — display headings */
+  --md-sys-color-surface: #ffffff;         /* Card surface (solid white, not glass) */
+  --md-sys-color-surface-variant: #F1F5F9;
+  --md-sys-color-surface-container-low: #F8FAFC;
+  --md-sys-color-surface-container: #ffffff;
+  --md-sys-color-surface-container-high: #F1F5F9;
+  --md-sys-color-surface-container-highest: #E8ECF1;
+  --md-sys-color-on-surface: #020617;     /* Slate 950 — primary text */
+  --md-sys-color-on-surface-variant: #475569;  /* Slate 600 — secondary text, ≥7:1 on white */
+  --md-sys-color-outline: #94A3B8;          /* Slate 400 — borders on white */
+  --md-sys-color-outline-variant: #E2E8F0;  /* Slate 200 — hairline dividers */
+  --md-sys-color-error: #DC2626;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #FEE2E2;
+  --md-sys-color-success: #15803D;          /* Green 700 — accessible on white */
+  --md-sys-color-warning: #B45309;          /* Amber 700 — accessible on white */
+
+  /* RGB triplet kept for components that use rgba(var(--md-sys-color-primary-rgb), a) */
+  --md-sys-color-primary-rgb: 3, 105, 161;
+  --md-sys-color-on-surface-rgb: 2, 6, 23;
+  --md-sys-color-on-surface-variant-rgb: 71, 85, 105;
+  --md-sys-color-surface-rgb: 255, 255, 255;
+  --md-sys-color-secondary-rgb: 51, 65, 85;
+
+  /* Solid-surface tokens replace the previous "glass bloom" treatment.
+     Cards & panels are opaque white with hairline borders — clinical, professional. */
+  --glass-bg: #ffffff;
+  --glass-bg-strong: #ffffff;
+  --glass-border: #E2E8F0;
+  --glass-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --glass-blur: 0px;
+
+  /* ---- Spacing scale (skill density=8 — Dense / Dashboard) ---- */
+  --space-xs: 2px;
+  --space-sm: 4px;
+  --space-md: 8px;
+  --space-lg: 12px;
+  --space-xl: 16px;
+  --space-2xl: 24px;
+  --space-3xl: 32px;
+
+  /* ---- Shadow depth (skill MASTER.md) ---- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.12);
+
+  /* ---- Typography ----
+     Inter keeps body duty (clinical readability over Fira Sans at long-form)).
+     Outfit stays for display.
+     Fira Code added for numeric data, IDs, timestamps. */
+  --font-body: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Outfit', 'Inter', system-ui, sans-serif;
+  --font-mono: 'Fira Code', ui-monospace, 'SF Mono', Consolas, monospace;
+
+  /* Deliberate type scale — used by all display + body copy. */
+  --type-display-xl: 2rem;       /* Hero h1 — was 2.25rem; tighter for clinical feel */
+  --type-display-l:  1.5rem;     /* Page h2 */
+  --type-display-m:  1.0625rem;  /* Section h3 */
+  --type-label:      0.75rem;    /* Eyebrow / section labels — small caps */
+  --type-body:       0.875rem;   /* Dense dashboard body (12-14px per skill) */
+  --type-mono:       0.8125rem;  /* Mono numeric */
+
+  color-scheme: light;
+  font-family: var(--font-body);
+  color: var(--md-sys-color-on-surface);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Material Web typescale tweaks — keep MD3 component lib working */
+  --md-sys-typescale-body-large-font: var(--font-body);
+  --md-sys-typescale-label-large-font: var(--font-body);
+  --md-ref-typeface-brand: var(--font-display);
+  --md-ref-typeface-plain: var(--font-body);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  /* Solid professional backdrop — no aurora blobs. */
+  background: #F8FAFC;
+  background-attachment: fixed;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  color: var(--md-sys-color-tertiary);
+  margin: 0;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+}
+
+a { color: var(--md-sys-color-primary); }
+
+/* Visible keyboard focus everywhere (skill: visible focus states) */
+:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- Panel surfaces (was .glass — kept the class name for back-compat) ---------- */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.glass-strong {
+  background: var(--glass-bg-strong);
+}
+
+/* ---------- Layout ---------- */
+.app-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 16px 80px;
+}
+
+.page-pad { padding: var(--space-2xl); }
+
+/* ---------- Material Symbols ---------- */
+.msym {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  vertical-align: middle;
+  -webkit-font-feature-settings: 'liga';
+  font-feature-settings: 'liga';
+  user-select: none;
+}
+
+/* ---------- Chips / pills / badges ---------- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-on-surface-variant);
+}
+.pill .msym {
+  font-size: 14px;
+  color: var(--md-sys-color-secondary);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.badge-success { background: #DCFCE7; color: #14532D; border: 1px solid #BBF7D0; }
+.badge-warn    { background: #FEF3C7; color: #78350F; border: 1px solid #FDE68A; }
+.badge-error   { background: #FEE2E2; color: #7F1D1D; border: 1px solid #FECACA; }
+.badge-info    { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); border: 1px solid #BAE6FD; }
+.badge-neutral { background: var(--md-sys-color-surface-container-low); color: var(--md-sys-color-on-surface-variant); border: 1px solid var(--md-sys-color-outline-variant); }
+
+/* ---------- Metric card ---------- */
+.metric {
+  flex: 1;
+  min-width: 140px;
+  padding: var(--space-xl) var(--space-2xl);
+  border-radius: 12px;
+}
+.metric .metric-value {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--md-sys-color-tertiary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.metric .metric-label {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* ---------- Utility ---------- */
+.row { display: flex; gap: var(--space-lg); }
+.row-wrap { display: flex; gap: var(--space-lg); flex-wrap: wrap; }
+.col { display: flex; flex-direction: column; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.gap-24 { gap: 24px; }
+.mt-8 { margin-top: 8px; } .mt-16 { margin-top: 16px; } .mt-24 { margin-top: 24px; }
+.grow { flex: 1; }
+.muted { color: var(--md-sys-color-on-surface-variant); }
+.center { text-align: center; }
+.spin {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- Custom scrollbars for dense lists (professional polish) ---------- */
+.child-list,
+.chat-messages,
+.edit-form-grid,
+.table-wrapper,
+.match-candidates {
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-sys-color-outline) transparent;
+}
+.child-list::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar,
+.table-wrapper::-webkit-scrollbar,
+.match-candidates::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.child-list::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb,
+.table-wrapper::-webkit-scrollbar-thumb,
+.match-candidates::-webkit-scrollbar-thumb {
+  background: var(--md-sys-color-outline);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.child-list::-webkit-scrollbar-thumb:hover,
+.chat-messages::-webkit-scrollbar-thumb:hover,
+.table-wrapper::-webkit-scrollbar-thumb:hover,
+.match-candidates::-webkit-scrollbar-thumb:hover {
+  background: var(--md-sys-color-secondary);
+  background-clip: content-box;
+}
+
+/* ---------- Custom scrollbars for dense lists (professional polish) ---------- */
+.child-list,
+.chat-messages,
+.edit-form-grid,
+.table-wrapper,
+.match-candidates {
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-sys-color-outline) transparent;
+}
+.child-list::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar,
+.table-wrapper::-webkit-scrollbar,
+.match-candidates::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.child-list::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb,
+.table-wrapper::-webkit-scrollbar-thumb,
+.match-candidates::-webkit-scrollbar-thumb {
+  background: var(--md-sys-color-outline);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.child-list::-webkit-scrollbar-thumb:hover,
+.chat-messages::-webkit-scrollbar-thumb:hover,
+.table-wrapper::-webkit-scrollbar-thumb:hover,
+.match-candidates::-webkit-scrollbar-thumb:hover {
+  background: var(--md-sys-color-secondary);
+  background-clip: content-box;
+}
+
+/* ---------- Reduced motion (skill critical checklist) ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .profile-card:hover,
+  .btn-primary:not(:disabled):hover,
+  .btn-tonal:not(:disabled):hover,
+  .tab-btn:hover,
+  .child-list-item:hover,
+  .assistant-fab:hover {
+    transform: none !important;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — tiered breakpoints per skill (375 / 768 / 1024 / 1440)
+   ============================================================ */
+
+/* ── ≤375px: small phone ── */
+@media (max-width: 375px) {
+  :root { --roster-cols: 1fr; }
+  .app-shell { padding: 12px 12px 80px; }
+  .page-pad { padding: 12px; }
+  .header-bar { padding: 8px 0; }
+  .header-bar .logo {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+  }
+  .status-badges .badge { padding: 4px 8px; font-size: 11px; }
+  .tab-btn { padding: 8px 10px; font-size: 11px; }
+  .tab-btn > span:not(.msym) { display: none; }
+  .hero-banner { padding: 14px 12px; }
+  .hero-banner h1 { font-size: 1.3rem; }
+  .hero-eyebrow { font-size: 10px; gap: 4px; }
+  .metrics-row { flex-direction: column; gap: 8px; }
+  .metric { min-width: 100%; padding: 10px 12px; }
+  .export-row { flex-direction: column; }
+  .profile-header { flex-direction: column; align-items: flex-start; text-align: left; }
+  .pills-row { justify-content: flex-start; }
+  .obs-grid, .timeline-grid { grid-template-columns: 1fr; }
+  .child-list-item { min-height: 44px; padding: 10px 12px; }
+  .admin-table { font-size: 11px; }
+  .admin-table th, .admin-table td { padding: 6px 8px; }
+  .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .dialog { margin: 12px; max-width: calc(100vw - 24px); }
+  .assistant-panel { width: calc(100vw - 24px); right: 12px; bottom: 70px; }
+  .assistant-fab { right: 16px; bottom: 16px; width: 64px; height: 64px; border-radius: 32px; box-shadow: 0 6px 20px rgba(3, 105, 161, 0.3); }
+  .assistant-fab .msym { font-size: 28px; }
+  .edit-form-grid { grid-template-columns: 1fr; }
+  .edit-obs-form { padding: 10px; }
+}
+
+/* ── 376–768px: phone / tablet portrait ── */
+@media (min-width: 376px) and (max-width: 768px) {
+  :root { --roster-cols: 1fr; }
+  .app-shell { padding: 16px 16px 80px; }
+  .page-pad { padding: 16px; }
+  .header-bar { padding: 10px 0; }
+  .header-bar .logo { font-size: 15px; }
+  .status-badges .badge { font-size: 11px; padding: 4px 10px; }
+  .tab-btn { font-size: 12px; padding: 10px 12px; }
+  .metrics-row { flex-wrap: wrap; }
+  .metric { min-width: calc(50% - 6px); }
+  .export-row { flex-wrap: wrap; }
+  .obs-grid, .timeline-grid { grid-template-columns: 1fr; }
+  .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .assistant-panel { width: calc(100vw - 32px); right: 16px; }
+  .edit-form-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+}
+
+/* ── 769–1024px: tablet landscape / small laptop ── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  :root { --roster-cols: 220px 1fr; }
+  .metrics-row { flex-wrap: wrap; }
+  .metric { min-width: calc(33.333% - 8px); }
+  .table-wrapper { overflow-x: auto; }
+}
+
+/* ── 1025–1440px: laptop / desktop ── */
+@media (min-width: 1025px) and (max-width: 1440px) {
+  :root { --roster-cols: 240px 1fr; }
+}
+
+/* ── ≥1441px: wide desktop ── */
+@media (min-width: 1441px) {
+  :root { --roster-cols: 260px 1fr; }
+}
+
+/* ── Global mobile helpers ── */
+@media (max-width: 768px) {
+  .header-bar .logo { max-width: 220px; }
+  .tab-btn > span:not(.msym) { display: inline; }
+  .tab-btn .msym { font-size: 16px; }
+  .status-badges .badge { gap: 4px; }
+  .status-badges .badge > span:not(.msym) { display: inline; }
+}
