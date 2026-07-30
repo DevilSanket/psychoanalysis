@@ -83,7 +83,8 @@ Return a single JSON object with EXACTLY the following structure:
       "testsDone": "<any psychological tests, assessments, games, or structured activities conducted during this visit/session - empty string if not mentioned>",
       "observations": "<detailed psychological and behavioral observations, emotional state, behavioral patterns, mental health indicators, mood, social interaction, psychological concerns - empty string if not mentioned>",
       "followUp": "<follow up details, status, or notes from the previous session/observation - empty string if not mentioned>",
-      "actionItems": ["<specific actionable follow-up task for this child>"]
+      "actionItems": ["<specific actionable follow-up task for this child>"],
+      "risk_category": "<classify child risk tier based on observations into EXACTLY ONE of: 'high_risk' (severe distress/trauma/self-harm/abuse/anger), 'trauma_unprocessed' (grief/abandonment/loss/unresolved past trauma), 'identity_formation' (adolescent identity/behavioral guidance), 'well_adjusted' (stable/healthy progress) - default to 'not_yet_screened' if unclear>"
     }}
   ]
 }}
@@ -172,6 +173,7 @@ def _parse_report_json(raw: str) -> tuple[dict, list[dict]]:
                     "followUp":           str(item.get("followUp", "")).strip(),
                     "psychologicalNotes": str(item.get("observations", "") or item.get("psychologicalNotes", "")).strip(),
                     "actionItems":        [str(a).strip() for a in action_items if str(a).strip()],
+                    "risk_category":      str(item.get("risk_category", "")).strip(),
                 })
     except Exception:
         pass
@@ -595,8 +597,13 @@ def save_to_db_node(state: PipelineState) -> dict[str, Any]:
         if report_hash and not force_save:
             query["observations.report_hash"] = {"$ne": report_hash}
 
+        update_doc: dict = {"$push": {"observations": observation}}
+        rc = child.get("risk_category")
+        if rc and rc in ("high_risk", "trauma_unprocessed", "identity_formation", "well_adjusted", "not_yet_screened"):
+            update_doc["$set"] = {"risk_category": rc}
+
         try:
-            res = collection.update_one(query, {"$push": {"observations": observation}})
+            res = collection.update_one(query, update_doc)
             if res.modified_count > 0:
                 results.append({"name": child["name"], "success": True, "reason": "OK"})
             elif res.matched_count == 0 and report_hash and not force_save:
