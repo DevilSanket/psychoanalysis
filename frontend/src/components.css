@@ -619,48 +619,52 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  max-height: calc(100vh - 280px);
+  gap: 4px;
+  flex: 1;
   overflow-y: auto;
+  padding-right: 4px;
 }
 .roster-child-list .child-list-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 10px 12px;
+  gap: 10px;
+  padding: 8px 10px;
   border-radius: 10px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--md-sys-color-on-surface);
-  transition: background 0.15s;
-  min-height: 72px;
+  transition: all 0.15s ease;
+  min-height: 52px;
+  border: 1px solid transparent;
 }
 .roster-child-list .child-list-item:hover {
-  background: rgba(var(--md-sys-color-primary-rgb), 0.06);
+  background: rgba(3, 105, 161, 0.05);
+  border-color: rgba(3, 105, 161, 0.15);
 }
 .roster-child-list .child-list-item.selected {
-  background: var(--md-sys-color-primary-container);
-  color: var(--md-sys-color-on-primary-container);
+  background: var(--md-sys-color-primary-container, #e0f2fe);
+  color: var(--md-sys-color-on-primary-container, #0369a1);
+  border-color: #7dd3fc;
   font-weight: 600;
 }
 .roster-child-list .child-list-item .mini-avatar {
-  width: 56px;
-  height: 56px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: var(--md-sys-color-surface-container-low);
-  border: 2px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface-container-low, #f8fafc);
+  border: 1.5px solid var(--md-sys-color-outline-variant, #cbd5e1);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  color: var(--md-sys-color-secondary);
+  font-size: 18px;
+  color: var(--md-sys-color-secondary, #475569);
   flex-shrink: 0;
   overflow: hidden;
 }
 .roster-child-list .child-list-item .mini-avatar img {
-  width: 56px;
-  height: 56px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
 }

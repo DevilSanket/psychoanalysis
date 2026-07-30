@@ -144,6 +144,8 @@ export interface MatchedChild {
   psychologicalNotes?: string;
   actionItems?: string[];
   candidates?: Candidate[];
+  /** Psychologist-selected risk/observation category for this session. */
+  risk_category?: string;
 }
 
 export interface ExtractRequest {

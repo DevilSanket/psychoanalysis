@@ -947,16 +947,37 @@ def get_success_stories() -> dict:
             last_date = last_obs.get("date")
             date_str = last_date.strftime("%d %b %Y") if isinstance(last_date, datetime) else str(last_date or "Recently")
 
+            # Extract dynamic summary, strengths, and nature/behavior from DB records
+            summary_text = (
+                child.get("ai_summary") or
+                child.get("trauma_eval_reason") or
+                last_obs.get("psychologicalNotes") or
+                last_obs.get("observations") or
+                "Demonstrating consistent positive emotional stability and active engagement."
+            )
+
+            strengths_text = (
+                child.get("strengths") or
+                last_obs.get("generalBackground") or
+                "Active participant, positive social interaction"
+            )
+
+            nature_text = (
+                child.get("nature_behavior") or
+                child.get("nature") or
+                "Well integrated and cheerful"
+            )
+
             well_adjusted_list.append({
                 "_id": cid,
                 "child_name": child.get("child_name") or "Unknown",
                 "balgruha_name": child.get("balgruha_name") or "Unassigned",
                 "photo_url": child.get("photo_url") or "",
-                "strengths": child.get("strengths") or "Active participant, positive attitude",
-                "nature_behavior": child.get("nature_behavior") or "Well integrated and cheerful",
+                "strengths": strengths_text,
+                "nature_behavior": nature_text,
                 "observations_count": len(obs),
                 "last_observation_date": date_str,
-                "summary": child.get("ai_summary") or "Making steady emotional progress, engaging positively in group therapy and social activities.",
+                "summary": summary_text,
             })
 
     recovered_this_month = len(well_adjusted_list)

@@ -45,6 +45,7 @@ export default function ReviewProfiles({ initial, meta, mongoDown, onBack, onSav
       followUp: c.followUp ?? "",
       psych: c.psychologicalNotes ?? "",
       actions: (c.actionItems ?? []).join("\n"),
+      category: c.risk_category ?? "",
     })),
   );
 
@@ -314,6 +315,7 @@ export default function ReviewProfiles({ initial, meta, mongoDown, onBack, onSav
           .split("\n")
           .map((s) => s.trim())
           .filter(Boolean),
+        risk_category: obs[i].category || undefined,
       }));
 
       const coaches = coachesRaw
@@ -759,6 +761,76 @@ export default function ReviewProfiles({ initial, meta, mongoDown, onBack, onSav
               {/* Observation fields */}
               <p className="section-label">Observation from this Report</p>
               <div className="obs-grid">
+                {/* Category Dropdown */}
+                <div className="form-group obs-full">
+                  <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span className="msym" aria-hidden="true">category</span>
+                    Category
+                    <span style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      padding: "2px 8px",
+                      borderRadius: 20,
+                      background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                      color: "#fff",
+                      letterSpacing: 0.4,
+                    }}>
+                      Select applicable
+                    </span>
+                  </label>
+                  <select
+                    id={`obs-category-${i}`}
+                    className="form-select"
+                    value={obs[i].category}
+                    onChange={(e) => updateObs(i, "category", e.target.value)}
+                    style={{
+                      borderRadius: 10,
+                      border: obs[i].category
+                        ? "2px solid var(--md-sys-color-primary, #6366f1)"
+                        : "1px solid var(--md-sys-color-outline-variant)",
+                      background: obs[i].category ? "rgba(99,102,241,0.06)" : undefined,
+                      fontWeight: obs[i].category ? 600 : undefined,
+                      transition: "border 0.2s, background 0.2s",
+                    }}
+                  >
+                    <option value="">— No observation / Not selected —</option>
+                    <option value="high_risk">🚨 High Risk</option>
+                    <option value="identity_formation">🪞 Identity Formation Stage</option>
+                    <option value="well_adjusted">🌱 Well Adjusted</option>
+                    <option value="trauma_unprocessed">💔 Trauma Being Processed</option>
+                    <option value="not_yet_screened">📋 No Observation</option>
+                  </select>
+                  {obs[i].category && (
+                    <div style={{
+                      marginTop: 6,
+                      padding: "6px 12px",
+                      borderRadius: 8,
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      background:
+                        obs[i].category === "high_risk" ? "#fee2e2" :
+                        obs[i].category === "trauma_unprocessed" ? "#fef3c7" :
+                        obs[i].category === "identity_formation" ? "#e0f2fe" :
+                        obs[i].category === "well_adjusted" ? "#dcfce7" : "#f1f5f9",
+                      color:
+                        obs[i].category === "high_risk" ? "#dc2626" :
+                        obs[i].category === "trauma_unprocessed" ? "#b45309" :
+                        obs[i].category === "identity_formation" ? "#0369a1" :
+                        obs[i].category === "well_adjusted" ? "#15803d" : "#475569",
+                    }}>
+                      {
+                        obs[i].category === "high_risk" ? "🚨 High Risk" :
+                        obs[i].category === "trauma_unprocessed" ? "💔 Trauma Being Processed" :
+                        obs[i].category === "identity_formation" ? "🪞 Identity Formation Stage" :
+                        obs[i].category === "well_adjusted" ? "🌱 Well Adjusted" : "📋 No Observation"
+                      }
+                    </div>
+                  )}
+                </div>
+
                 <div className="form-group obs-full">
                   <label><span className="msym" aria-hidden="true">assignment</span> General Background</label>
                   <textarea

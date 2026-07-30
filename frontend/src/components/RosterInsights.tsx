@@ -94,6 +94,30 @@ function downloadBlob(data: string, filename: string, mime: string) {
   URL.revokeObjectURL(url);
 }
 
+export const TRAUMA_CATEGORIES = [
+  { key: "high_risk", label: "High Risk", color: "#ef4444", bg: "rgba(239,68,68,0.12)" },
+  { key: "identity_formation", label: "Identity Formation stage", color: "#d97706", bg: "rgba(245,158,11,0.12)" },
+  { key: "well_adjusted", label: "Well Adjusted", color: "#10b981", bg: "rgba(16,185,129,0.12)" },
+  { key: "trauma_unprocessed", label: "Trauma being processed", color: "#8b5cf6", bg: "rgba(139,92,246,0.12)" },
+  { key: "no_observation", label: "No observation", color: "#64748b", bg: "rgba(100,116,139,0.12)" },
+];
+
+export function getChildCategoryKey(child: ChildDoc): string {
+  const obsCount = child.observations?.length ?? 0;
+  if (obsCount === 0) return "no_observation";
+
+  const raw = (child.risk_category || child.trauma_category || "").toLowerCase().trim();
+  if (!raw || raw.includes("not_yet_screened") || raw.includes("not yet screened")) {
+    return "no_observation";
+  }
+  if (raw.includes("high")) return "high_risk";
+  if (raw.includes("trauma") || raw.includes("unprocessed")) return "trauma_unprocessed";
+  if (raw.includes("identity")) return "identity_formation";
+  if (raw.includes("well") || raw.includes("adjusted")) return "well_adjusted";
+
+  return "no_observation";
+}
+
 export interface RosterInsightsProps {
   initialCenter?: string;
   initialChildName?: string;
@@ -136,8 +160,9 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
   const [tasksViewMode, setTasksViewMode] = useState<"ai" | "raw">("ai");
   const [rawReports, setRawReports] = useState<Record<string, { loading: boolean; text?: string; error?: string }>>({});
 
-  // Directory sorting state
+  // Directory sorting & trauma category filtering state
   const [sortBy, setSortBy] = useState<"name" | "observations">("name");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [genderInferring, setGenderInferring] = useState(false);
 
 
@@ -557,6 +582,21 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
       });
   }, [selectedKid]);
 
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      high_risk: 0,
+      identity_formation: 0,
+      well_adjusted: 0,
+      trauma_unprocessed: 0,
+      no_observation: 0,
+    };
+    for (const k of kids) {
+      const catKey = getChildCategoryKey(k);
+      counts[catKey] = (counts[catKey] || 0) + 1;
+    }
+    return counts;
+  }, [kids]);
+
   const filteredKids = useMemo(() => {
     let result = kids;
     if (search.trim()) {
@@ -564,6 +604,13 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
       result = result.filter(k => k.child_name.toLowerCase().includes(q));
     }
     
+    if (selectedCategories.length > 0) {
+      result = result.filter(k => {
+        const catKey = getChildCategoryKey(k);
+        return selectedCategories.includes(catKey);
+      });
+    }
+
     result = [...result].sort((a, b) => {
       if (sortBy === "name") {
         return a.child_name.localeCompare(b.child_name);
@@ -577,9 +624,9 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
       }
       return 0;
     });
-    
+
     return result;
-  }, [kids, search, sortBy]);
+  }, [kids, search, selectedCategories, sortBy]);
 
 
   const handleDeleteObs = async (
@@ -821,9 +868,9 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
               in components.css can collapse to single column on mobile without
               being overridden by an inline style (inline styles always win
               over media-query selectors; CSS vars are resolved at use site). */}
-          <div className="roster-layout" style={{ ['--roster-cols' as string]: '240px 1fr' }}>
+          <div className="roster-layout" style={{ ['--roster-cols' as string]: '300px 1fr' }}>
             {/* Left panel: child directory */}
-            <div className="glass page-pad col gap-8 roster-sidebar">
+            <div className="glass page-pad col gap-8 roster-sidebar" style={{ position: "sticky", top: "84px", maxHeight: "calc(100vh - 104px)", display: "flex", flexDirection: "column" }}>
               <h3 className="roster-sidebar-title" style={{ marginBottom: 6 }}>Child Directory</h3>
               {/* Gender & total stats row */}
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10, alignItems: "center" }}>
@@ -868,6 +915,84 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
                 />
               </div>
 
+              {/* Trauma Category Filter Multi-Select */}
+              <div style={{
+                background: "var(--md-sys-color-surface-container-low, #f8fafc)",
+                border: "1px solid var(--md-sys-color-outline-variant, #e2e8f0)",
+                borderRadius: 8,
+                padding: "10px 12px",
+                marginBottom: 12,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--md-sys-color-on-surface-variant)" }}>
+                    Category (Select applicable)
+                  </span>
+                  {selectedCategories.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategories([])}
+                      style={{
+                        background: "none", border: "none", padding: 0,
+                        color: "var(--md-sys-color-primary)", fontSize: 11, fontWeight: 600,
+                        cursor: "pointer", textDecoration: "underline"
+                      }}
+                    >
+                      Clear ({selectedCategories.length})
+                    </button>
+                  )}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {TRAUMA_CATEGORIES.map((cat) => {
+                    const isChecked = selectedCategories.includes(cat.key);
+                    const count = categoryCounts[cat.key] || 0;
+                    return (
+                      <label
+                        key={cat.key}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          fontSize: 12,
+                          fontWeight: isChecked ? 600 : 400,
+                          cursor: "pointer",
+                          userSelect: "none",
+                          padding: "2px 4px",
+                          borderRadius: 4,
+                          background: isChecked ? "rgba(3,105,161,0.06)" : "transparent",
+                          transition: "background 0.15s ease",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              setSelectedCategories((prev) =>
+                                isChecked
+                                  ? prev.filter((k) => k !== cat.key)
+                                  : [...prev, cat.key]
+                              );
+                            }}
+                            style={{ accentColor: "var(--md-sys-color-primary)", cursor: "pointer" }}
+                          />
+                          <span>{cat.label}</span>
+                        </div>
+                        <span style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: "1px 6px",
+                          borderRadius: 10,
+                          color: cat.color,
+                          backgroundColor: cat.bg,
+                        }}>
+                          {count}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Sort control */}
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -885,7 +1010,22 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
               </div>
 
               {filteredKids.length === 0 ? (
-                <p className="muted center">No matches</p>
+                <div style={{ textAlign: "center", padding: "16px 8px", color: "var(--md-sys-color-on-surface-variant)" }}>
+                  <p className="muted" style={{ margin: "0 0 8px", fontSize: 13 }}>No matching children found</p>
+                  {(search || selectedCategories.length > 0) && (
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      style={{ fontSize: 11, padding: "4px 8px" }}
+                      onClick={() => {
+                        setSearch("");
+                        setSelectedCategories([]);
+                      }}
+                    >
+                      Reset Search & Filters
+                    </button>
+                  )}
+                </div>
               ) : (
                 <ul className="child-list roster-child-list">
                   {filteredKids.map((k) => (
@@ -932,7 +1072,7 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
                       <div className="child-list-meta">
                         <div className="child-list-name">{k.child_name}</div>
 
-                        <div className="muted child-list-sub" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <div className="muted child-list-sub" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                           <span>{(k.observations?.length ?? 0)} obs</span>
                           {k.gender === "male" && (
                             <span style={{
@@ -950,6 +1090,24 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
                               borderRadius: 10, padding: "1px 6px",
                             }}>♀ F</span>
                           )}
+                          {(() => {
+                            const catKey = getChildCategoryKey(k);
+                            const catObj = TRAUMA_CATEGORIES.find(c => c.key === catKey);
+                            if (catObj && catKey !== "no_observation") {
+                              return (
+                                <span style={{
+                                  fontSize: 9, fontWeight: 700,
+                                  color: catObj.color,
+                                  background: catObj.bg,
+                                  borderRadius: 8, padding: "1px 5px",
+                                  whiteSpace: "nowrap"
+                                }}>
+                                  {catObj.label.split(" ")[0]}
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
                         </div>
                       </div>
                     </li>
@@ -1050,26 +1208,41 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
                         {
                           value: "high_risk",
                           label: "🔴 High Risk",
-                          sub: "Unprocessed Trauma",
+                          sub: "Immediate care needed",
                           color: "#ef4444",
                           bg: "rgba(239,68,68,0.12)",
                         },
                         {
-                          value: "ongoing_trauma",
-                          label: "🟠 Ongoing Trauma",
-                          sub: "Active support needed",
-                          color: "#f97316",
-                          bg: "rgba(249,115,22,0.12)",
+                          value: "identity_formation",
+                          label: "🟡 Identity Formation stage",
+                          sub: "Process ongoing",
+                          color: "#d97706",
+                          bg: "rgba(245,158,11,0.12)",
                         },
                         {
-                          value: "identity_formed",
-                          label: "🟢 Identity Formed",
-                          sub: "Stable, progressing well",
-                          color: "#22c55e",
-                          bg: "rgba(34,197,94,0.12)",
+                          value: "well_adjusted",
+                          label: "🟢 Well Adjusted",
+                          sub: "Stable & integrated",
+                          color: "#10b981",
+                          bg: "rgba(16,185,129,0.12)",
+                        },
+                        {
+                          value: "trauma_unprocessed",
+                          label: "🟣 Trauma being processed",
+                          sub: "Therapy in progress",
+                          color: "#8b5cf6",
+                          bg: "rgba(139,92,246,0.12)",
+                        },
+                        {
+                          value: "no_observation",
+                          label: "⚪ No observation",
+                          sub: "Not yet screened",
+                          color: "#64748b",
+                          bg: "rgba(100,116,139,0.12)",
                         },
                       ];
-                      const current = RISK_OPTIONS.find((o) => o.value === kidDoc.risk_category);
+                      const currentKey = getChildCategoryKey(kidDoc);
+                      const current = RISK_OPTIONS.find((o) => o.value === kidDoc.risk_category || o.value === currentKey);
                       return (
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
                           {/* Badge */}
@@ -1088,7 +1261,7 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
                               background: "rgba(148,163,184,0.15)", borderRadius: 20,
                               padding: "4px 12px", fontSize: 13, fontWeight: 600,
                               color: "var(--md-sys-color-on-surface-variant)",
-                            }}>⚪ No risk category set</span>
+                            }}>⚪ No observation set</span>
                           )}
 
                           {/* Edit button / inline editor */}
@@ -1104,14 +1277,15 @@ export default function RosterInsights({ initialCenter, initialChildName }: Rost
                             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                               <select
                                 className="form-select"
-                                style={{ padding: "4px 10px", fontSize: 13, height: "auto", minWidth: 180 }}
+                                style={{ padding: "4px 10px", fontSize: 13, height: "auto", minWidth: 200 }}
                                 value={riskEditValue}
                                 onChange={(e) => setRiskEditValue(e.target.value)}
                               >
-                                <option value="">— Not set —</option>
-                                <option value="high_risk">🔴 High Risk (Unprocessed Trauma)</option>
-                                <option value="ongoing_trauma">🟠 Ongoing Trauma</option>
-                                <option value="identity_formed">🟢 Identity Formed</option>
+                                <option value="">⚪ No observation</option>
+                                <option value="high_risk">🔴 High Risk</option>
+                                <option value="identity_formation">🟡 Identity Formation stage</option>
+                                <option value="well_adjusted">🟢 Well Adjusted</option>
+                                <option value="trauma_unprocessed">🟣 Trauma being processed</option>
                               </select>
                               <button
                                 className="btn btn-filled btn-sm"
